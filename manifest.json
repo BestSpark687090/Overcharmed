@@ -1,0 +1,13 @@
+{
+    "id": "Overcharmed",
+    "author": ["BestSpark687090"],
+    "name": "Overcharmed (Bakery Addon)",
+    "description": "Lets you equip infinite charms. Simple. Oh by the way you can't unequip them... yet.",
+    "badge_colour": "ff0000",
+    "badge_text_colour": "00ff00",
+    "prefix": "Overcharmed",
+    "version": "1.0.0",
+    "main_file": "main.lua",
+    "dependencies": ["Steamodded (>=1.0.0~BETA-0404a)", "Bakery (>=2.20.5)"],
+    "priority":2
+}
