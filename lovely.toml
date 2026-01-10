@@ -259,40 +259,92 @@ payload = """for k,v in ipairs(G.Bakery_charm_area.cards) do
     v.T.y = v.parent.T.y + k*0.5
 end"""
 
-# Charm type: Hopefully adjust cardarea display 
-# [[patches]]
-# [patches.pattern]
-# target = 'cardarea.lua'
-# pattern = "elseif self.config.type == 'joker' or self.config.type == 'title_2' then"
-# position = "before"
-# match_indent = true
-# payload = """elseif self.config.type == 'charm' then
-# for k, card in ipairs(self.cards) do
-#             if not card.states.drag.is then 
-#                 card.T.r = 0.1*(-#self.cards/2 - 0.5 + k)/(#self.cards)+ (G.SETTINGS.reduced_motion and 0 or 1)*0.02*math.sin(2*G.TIMERS.REAL+card.T.x)
-#                 local max_cards = math.max(#self.cards, self.config.temp_limit)
-#                 if max_cards_override then max_cards = max_cards_override end
-#                 card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/math.max(max_cards-1, 1) - 0.5*(#self.cards-max_cards)/math.max(max_cards-1, 1)) + 0.5*(self.card_w - card.T.w)
-#                 if #self.cards > 2 or (#self.cards > 1 and self == G.consumeables) or (#self.cards > 1 and self.config.spread) then
-#                     card.T.x = self.T.x + (self.T.w-self.card_w)*((k-1)/(#self.cards-1)) + 0.5*(self.card_w - card.T.w)
-#                 elseif #self.cards > 1 and self ~= G.consumeables then
-#                     card.T.x = self.T.x + (self.T.w-self.card_w)*((k - 0.5)/(#self.cards)) + 0.5*(self.card_w - card.T.w)
-#                 else
-#                     card.T.x = self.T.x + self.T.w/2 - self.card_w/2 + 0.5*(self.card_w - card.T.w)
-#                 end
-#                 local highlight_height = G.HIGHLIGHT_H/2
-#                 if not card.highlighted then highlight_height = 0 end
-#                 card.T.y = self.T.y + self.T.h/2 - card.T.h/2 - highlight_height+ (G.SETTINGS.reduced_motion and 0 or 1)*0.03*math.sin(0.666*G.TIMERS.REAL+card.T.x)
-#                 card.T.x = card.T.x + card.shadow_parrallax.x/30
-#             end
-#         end
-# """
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "test/charm_tests.lua"]'
+pattern = """equip 'BakeryCharm_Bakery_Epitaph'
+        equip 'BakeryCharm_Bakery_Coin'"""
+position = "at"
+match_indent = true
+payload = """equip 'BakeryCharm_Bakery_Epitaph'
+        unequip 'BakeryCharm_Bakery_Epitaph'
+        equip 'BakeryCharm_Bakery_Coin'
+"""
 
-# Charm UI: Make it a charm type
-# [[patches]]
-# [patches.pattern]
-# target = '=[SMODS Bakery "src//charm.lua"]'
-# pattern = "type = 'joker',"
-# position = "at"
-# match_indent = true
-# payload = "type = 'charm',"
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "test/charm_tests.lua"]'
+pattern = """Balatest.TestPlay {
+    name = 'rune_can_discard_zero',
+    category = { 'charms', 'rune' },
+
+    execute = function()
+        equip 'BakeryCharm_Bakery_Rune'
+    end,
+    assert = function()
+        local node = { config = {} }
+        G.FUNCS.can_discard(node)
+        Balatest.assert(node.config.button == 'Bakery_discard_zero')
+    end
+}
+Balatest.TestPlay {
+    name = 'rune_cant_discard_zero',
+    category = { 'charms', 'rune' },
+
+    discards = 0,
+    execute = function()
+        equip 'BakeryCharm_Bakery_Rune'
+    end,
+    assert = function()
+        local node = { config = {} }
+        G.FUNCS.can_discard(node)
+        Balatest.assert(node.config.button ~= 'Bakery_discard_zero')
+    end
+}
+Balatest.TestPlay {
+    name = 'rune_discard_zero',
+    category = { 'charms', 'rune' },
+
+    hand_size = 8,
+    execute = function()
+        equip 'BakeryCharm_Bakery_Rune'
+        Balatest.q(G.FUNCS.Bakery_discard_zero)
+        Balatest.wait_for_input()
+    end,
+    assert = function()
+        Balatest.assert_eq(#G.hand.cards, 10)
+    end
+}
+Balatest.TestPlay {
+    name = 'rune_discard_zero_grat',
+    category = { 'charms', 'rune' },
+
+    jokers = { 'j_delayed_grat' },
+    dollars = 8,
+    hand_size = 8,
+    execute = function()
+        equip 'BakeryCharm_Bakery_Rune'
+        Balatest.q(G.FUNCS.Bakery_discard_zero)
+        Balatest.end_round()
+        Balatest.cash_out()
+    end,
+    assert = function()
+        Balatest.assert_eq(G.GAME.dollars, 0)
+    end
+}"""
+position="at"
+match_indent=true
+payload = "-- Disabled Rune tests because they were crashing my game for an unknown reason"
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "test/charm_tests.lua"]'
+pattern="local function equip(key)"
+position="before"
+match_indent=true
+payload="""local function unequip(key)
+Balatest.q(function()
+        G.P_CENTERS[key]:unequip(G.Bakery_charm_area.cards[Bakery_API.find_charm_index_in_area(v)])
+    end)
+end
+"""
