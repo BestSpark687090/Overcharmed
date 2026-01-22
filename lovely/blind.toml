@@ -1,0 +1,34 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]] # Reequip when boss is defeated
+[patches.pattern]
+target = '=[SMODS Bakery "src//blind.lua"]'
+pattern = """G.GAME.Bakery_charm = G.Bakery_charm_area.cards[1].config.center.key
+            G.P_CENTERS[G.GAME.Bakery_charm]:equip(G.Bakery_charm_area.cards[1])
+            SMODS.recalc_debuff(G.Bakery_charm_area.cards[1])"""
+position = "at"
+match_indent = true
+payload = """for k,v in ipairs(G.GAME.Bakery_charm) do
+                local eq_card = G.Bakery_charm_area.cards[Bakery_API.find_charm_index_in_area(v)]
+                G.GAME.Bakery_charm[k] = eq_card.config.center_key
+                G.P_CENTERS[v]:equip(eq_card)
+                SMODS.recalc_debuff(eq_card)
+            end"""
+
+
+[[patches]] # Correct debuffing
+[patches.pattern]
+target = '=[SMODS Bakery "src//blind.lua"]'
+pattern = """G.P_CENTERS[G.GAME.Bakery_charm]:unequip(G.Bakery_charm_area.cards[1])
+            G.GAME.Bakery_charm = nil"""
+position = "at"
+match_indent = true
+payload = """for k,v in ipairs(G.GAME.Bakery_charm) do
+    local index = Bakery_API.find_charm_index(v)
+    local eq_card = G.Bakery_charm_area.cards[Bakery_API.find_charm_index_in_area(v)]
+    G.P_CENTERS[v]:unequip(eq_card)
+    table.remove(G.GAME.Bakery_charm,Bakery_API.find_charm_index_in_area(v))
+    G.GAME.Bakery_charm[k] = nil -- just to be safe
+end"""

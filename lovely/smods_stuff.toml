@@ -1,0 +1,21 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]]
+[patches.pattern]
+target='=[SMODS _ "src/utils.lua"]'
+pattern = "self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used"
+times = 1
+position="at"
+match_indent=true
+payload="if self.config.bakery_thingy == nil then self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used end"
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "type = 'joker',"
+times = 1 
+match_indent = true
+position = "after"
+payload = "bakery_thingy = 'h',"

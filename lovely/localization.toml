@@ -1,0 +1,23 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]] #idk why but i can
+[patches.pattern]
+target = '=[SMODS Bakery "localization/en-us.lua"]'
+pattern = 'b_Bakery_equip = "EQUIP",'
+position = "before"
+match_indent = true
+times = 1
+payload = 'b_Bakery_unequip = "UNEQUIP",'
+
+[[patches]]
+[patches.pattern]
+target='=[SMODS Bakery "localization/en-us.lua"]'
+pattern = """k_BakeryCharmInfo = { "Only one Charm may be equipped at a time.",
+                "Purchasing a new Charm replaces an old one." },"""
+position = "at"
+match_indent =  true
+times = 1
+payload = """k_BakeryCharmInfo = { "As many charms can be equipped at once.",
+                "You're welcome. - BestSpark687090" },"""

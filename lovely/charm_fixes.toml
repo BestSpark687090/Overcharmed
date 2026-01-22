@@ -1,0 +1,60 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]] # Introversion: Set the joker rate
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.GAME.joker_rate = card.ability.extra.prior"
+position = "at"
+match_indent = true
+payload = "G.GAME.joker_rate = G.GAME.introversion_joker_rate or (card.ability.extra and card.ability.extra.prior)"
+
+
+[[patches]] # Introversion: Store joker rate
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = """card.ability.extra.prior = G.GAME.joker_rate"""
+position = "after"
+match_indent = true
+payload = """G.GAME.introversion_joker_rate = G.GAME.joker_rate"""
+
+[[patches]] # Cogwheel: Default to 2 antes and 1 card slot if no extra found
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "ease_ante\\((?<neg>-|)card.ability.extra.antes\\)"
+position = "at"
+times = 2
+match_indent = true
+payload = """card.ability.antes = (card.ability.extra ~= nil and card.ability.extra.antes) or 2
+ease_ante($neg ((card.ability.extra ~= nil and card.ability.extra.antes) or card.ability.antes))"""
+
+[[patches]]
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "change_shop_size\\((?<neg>-|)card.ability.extra.cards\\)"
+position = "at"
+times = 2
+match_indent = true
+payload = """card.ability.cards = (card.ability.extra ~= nil and card.ability.extra.cards) or 2
+change_shop_size($neg ((card.ability.extra ~= nil and card.ability.extra.cards) or card.ability.cards))"""
+
+ 
+[[patches]] # patch ante setter
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.GAME.round_resets.blind_ante = G.GAME.round_resets.blind_ante (?<val>\\+|-) card.ability.extra.antes"
+position = "at"
+times = 2
+match_indent = true
+payload = "G.GAME.round_resets.blind_ante = G.GAME.round_resets.blind_ante $val card.ability.antes"
+
+
+[[patches]] # PetriDish: Fix setting consumeable card limit by doing or 2 for card.ability.extra
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.consumeables.config.card_limit = G.consumeables.config.card_limit (?<val>\\+|-) card.ability.extra"
+position = "at"
+times = 2
+match_indent = true
+payload = "G.consumeables.config.card_limit = G.consumeables.config.card_limit $val (card.ability.extra or 2)"

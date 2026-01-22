@@ -1,0 +1,45 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]] # Not really needed, since I overwrote the testing func
+[patches.pattern]
+target = '=[SMODS Bakery "test/charm_tests.lua"]'
+pattern="local function equip(key)"
+position="before"
+match_indent=true
+payload="""local function unequip(key)
+Balatest.q(function()
+        G.P_CENTERS[key]:unequip(G.Bakery_charm_area.cards[Bakery_API.find_charm_index_in_area(v)])
+    end)
+end
+"""
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "test/charm_tests.lua"]'
+pattern = """local function equip(key)
+    Balatest.q(function()
+        G.FUNCS.Bakery_equip_from_shop { config = { ref_table = Card(G.Bakery_charm_area.T.x + G.Bakery_charm_area.T.w / 2, G.Bakery_charm_area.T.y, G.CARD_W, G.CARD_W,
+            G.P_CARDS.empty, G.P_CENTERS[key], {
+                bypass_discovery_center = true,
+                bypass_discovery_ui = true
+            }) } }
+    end)
+end"""
+position="at"
+match_indent=true
+payload="""local function equip(key)
+    Balatest.q(function()
+            if not G.Bakery_charm_area.cards[1] then
+                sendWarnMessage("No charm was found in G.Bakery_charm_area to destroy.", "Bakery")
+            else
+                G.P_CENTERS[G.GAME.Bakery_charm]:unequip(G.Bakery_charm_area.cards[1])
+            end
+        G.FUNCS.Bakery_equip_from_shop { config = { ref_table = Card(G.Bakery_charm_area.T.x + G.Bakery_charm_area.T.w / 2, G.Bakery_charm_area.T.y, G.CARD_W, G.CARD_W,
+            G.P_CARDS.empty, G.P_CENTERS[key], {
+                bypass_discovery_center = true,
+                bypass_discovery_ui = true
+            }) } }
+    end)
+end"""

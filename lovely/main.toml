@@ -1,0 +1,254 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+# Welcome to the Overcharmed toml files. 
+# Please, uhh... enjoy your stay and... *peruse* around. I guess.
+
+
+[[patches]] # Now listen IDK why it's 2 slashes but it is..
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "(?<if_c>.*)G.GAME.Bakery_charm == (?<quote>'|\")(?<charm>[a-zA-Z_]*)('|\")(?<after>.*)"
+match_indent = true
+position = "at"
+payload = "$if_c Bakery_API.check_charms($quote$charm$quote)$after"
+
+[[patches]] # Second charm change for startings of parentheses
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "(?<if_c>.*)\\(G.GAME.Bakery_charm == (?<quote>'|\")(?<charm>[a-zA-Z_]*)('|\")(?<after>.*)"
+match_indent = true
+position = "at"
+payload = "$if_c (Bakery_API.check_charms($quote$charm$quote)$after"
+
+[[patches]] # Third charm change for not equal statements (Anaglyph Lens)
+[patches.regex]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "(?<if_c>.*)G.GAME.Bakery_charm ~= (?<quote>'|\")(?<charm>[a-zA-Z_]*)('|\")(?<after>.*)"
+match_indent = true
+position = "at"
+payload = "$if_c not Bakery_API.check_charms($quote$charm$quote)$after"
+
+[[patches]] # Overcharmed Charm API (Accessible via Bakery_API, from the original Bakery mod.)
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "Bakery_API.guard(function()"
+times = 1
+position = "after"
+match_indent = true
+payload = """ -- BEGIN OVERCHARMED CHARM API
+Bakery_API.check_charms = function(key)
+    -- it's as shrimple as that... i guess!
+    if G.GAME.Bakery_charm == nil or G.GAME.Bakery_last_checked_charm == nil then
+        G.GAME.Bakery_charm = {}
+        G.GAME.Bakery_last_checked_charm = ""
+    end
+    for k,v in ipairs(G.GAME.Bakery_charm) do
+        if v == key then
+            G.GAME.Bakery_last_checked_charm = v
+            return true
+        end 
+    end
+    return false
+end
+Bakery_API.find_charm_index = function(key)
+    if G.GAME.Bakery_last_checked_charm == "" then return nil end
+    if G.GAME.Bakery_charm == nil or G.GAME.Bakery_last_checked_charm == nil then
+        G.GAME.Bakery_charm = {}
+        G.GAME.Bakery_last_checked_charm = ""
+    end
+
+    for k,v in ipairs(G.GAME.Bakery_charm) do
+        if v == key then -- key is the charm key
+            G.GAME.Bakery_last_checked_charm = v
+            return k
+        end 
+    end
+    return nil
+end
+Bakery_API.find_charm_index_in_area = function(key)
+    if G.Bakery_charm_area == nil then return nil end
+    for k,v in ipairs(G.Bakery_charm_area.cards) do
+        if v.config.center_key == key then
+            return k
+        end
+    end
+    return nil
+end
+-- END OVERCHARMED CHARMAPI
+"""
+
+[[patches]] # actually insert it into the table
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.GAME.Bakery_charm = self.config.center_key"
+position = "at"
+match_indent = true
+payload = "table.insert(G.GAME.Bakery_charm,self.config.center_key)"
+
+[[patches]] # remove unequipment
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = """G.P_CENTERS[G.GAME.Bakery_charm]:unequip(G.Bakery_charm_area.cards[1])
+            G.GAME.used_jokers[G.GAME.Bakery_charm] = nil
+            if not G.Bakery_charm_area.cards[1] then
+                sendWarnMessage("No charm was found in G.Bakery_charm_area to destroy.", "Bakery")
+            else
+                G.Bakery_charm_area.cards[1]:start_dissolve()
+            end"""
+position = "at"
+times = 1
+match_indent = true
+payload = "-- removed by overcharmed :P" # we dont wanna remove it!
+
+[[patches]] # Regex to find where charm.lua's checking for all the cards.
+[patches.regex]
+# okay now THIS ONE may be particularly stupid
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "(?<before>.*)G\\.Bakery_charm_area\\.cards\\[1\\](?<after>.*)"
+position = "at"
+match_indent = true
+payload = "$before G.Bakery_charm_area.cards[Bakery_API.find_charm_index(G.GAME.Bakery_last_checked_charm)+1]$after"
+
+
+
+[[patches]] # Charm Object: remove badge that says you can only have 1
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = """info_queue[#info_queue + 1] = {
+                    set = "Other",
+                    key = "Bakery_charm"
+                }"""
+position = "at"
+match_indent = true
+times = 1
+payload = ""
+
+
+[[patches]] # Add more space for charms?
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.Bakery_charm_area = CardArea(0, 0, 0.95 * G.CARD_W, 0.95 * G.CARD_W, {"
+position = "at"
+times = 1
+match_indent = true
+payload = "G.Bakery_charm_area = CardArea(2, 0, 2 * G.CARD_W, 0.95 * G.CARD_W, {"
+
+[[patches]] # Attempts to add even more space for charms. No clue if this worked or not.
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "G.Bakery_charm_area.T.x = G.TILE_W - G.Bakery_charm_area.T.w - 0.5"
+position = "at"
+times = 1
+match_indent = true
+payload = "G.Bakery_charm_area.T.x = (G.TILE_W - G.Bakery_charm_area.T.w - 0.5) +1 "
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "if G.STAGE == G.STAGES.RUN and G.Bakery_charm_area then"
+position = "after"
+match_indent = true
+payload = """for k,v in ipairs(G.Bakery_charm_area.cards) do
+    v.T.y = v.parent.T.y + k*0.5
+end"""
+
+
+[[patches]] # Added the unequip functions used in the button, which is also here.
+[patches.pattern]
+target='=[SMODS Bakery "src//charm.lua"]'
+pattern = "function Bakery_API.equip_button(card)"
+position="at"
+match_indent = true
+times = 1
+payload = """function G.FUNCS.Bakery_can_unequip(e) -- for now
+    if e.config.ref_table.label == "BakeryCharm_Bakery_Ducttape" then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button=nil
+    else
+        e.config.colour = G.C.GREEN
+        e.config.button = 'Bakery_unequip'
+        e.config.func = "Bakery_can_unequip"
+    end
+    
+end
+function G.FUNCS.Bakery_unequip(e)
+    local card = e.config.ref_table
+    G.P_CENTERS[card.label]:unequip(card)
+    if not Bakery_API.find_charm_index(card.label) then -- If we don't find another one
+        G.GAME.used_jokers[card.label] = nil
+    end
+    table.remove(G.GAME.Bakery_charm,card.rank)
+    card:start_dissolve()
+end
+function Bakery_API.unequip_button(card)
+        return {
+            n = G.UIT.ROOT,
+            config = {
+                ref_table = card,
+                minw = 1.1,
+                maxw = 1.3,
+                padding = 0.1,
+                align = 'bm',
+                colour = G.C.GREEN,
+                shadow = true,
+                r = 0.08,
+                minh = 0.94,
+                func = 'Bakery_can_unequip',
+                one_press = true,
+                button = 'Bakery_unequip',
+                hover = true
+            },
+            nodes = { {
+                n = G.UIT.T,
+                config = {
+                    text = localize('b_Bakery_unequip'),
+                    colour = G.C.WHITE,
+                    scale = 0.4
+                }
+            } }
+        }
+    end
+function Bakery_API.equip_button(card)
+if card.Bakery_equipped then return Bakery_API.unequip_button(card) end"""
+
+[[patches]] # Make the charms highlightable
+[patches.pattern]
+target='=[SMODS Bakery "src//charm.lua"]'
+pattern = "return self ~= G.Bakery_charm_area and raw_CardArea_can_highlight(self, card)"
+position ="at"
+match_indent = true
+times = 1
+# I hope this wasn't the reason why...
+payload = "return raw_CardArea_can_highlight(self, card)"
+
+[[patches]] # DuctTape: Remove the if statement checking for it when you buy
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "if G.GAME.Bakery_charm == 'BakeryCharm_Bakery_DuctTape' or"
+position = "at"
+match_indent = true
+times = 1
+payload = "if"
+
+[[patches]] # Makes sure the charm is equipped i guess
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "if G.GAME.Bakery_charm then"
+times = 1
+position = "before"
+match_indent = true
+payload = """self.Bakery_equipped = true"""
+
+[[patches]] # This isn't a good idea... It'll work though.
+[patches.pattern]
+target = '=[SMODS Bakery "src//charm.lua"]'
+pattern = "register = function(self)"
+times = 1
+position = "after"
+match_indent = true
+payload = """if not self.config then self.config = {} end
+if not self.config.card_limits then self.config.card_limits = {} end
+self.config.card_limits.extra_slots_used = -1
+"""

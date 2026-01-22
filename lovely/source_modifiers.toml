@@ -1,0 +1,38 @@
+[manifest]
+version = "1.0.0"
+priority = 1000
+
+[[patches]]
+[patches.pattern]
+target="functions/UI_definitions.lua"
+pattern = "if card.ability.consumeable then"
+position = "at"
+match_indent = true
+payload = "if card.ability.consumeable and not card.area.config.type == 'charm' then"
+
+[[patches]] # Actually grab the unequip button
+[patches.pattern]
+target="functions/UI_definitions.lua"
+pattern = "if card.area and card.area.config.type == 'joker' then"
+position = "before"
+match_indent = true
+payload = """
+if card.label:sub(1,11) == "BakeryCharm" then
+    return Bakery_API.unequip_button(card)
+end
+"""
+
+[[patches]] # Add unequip button? 👀
+[patches.pattern] # i have no clue if this works
+target = 'functions/UI_definitions.lua'
+pattern = "if card.area == G.shop_vouchers and G.shop_vouchers then --Add a redeem button"
+position = 'before'
+match_indent = true
+times = 1
+payload = """
+if card.area == G.Bakery_charm_area and G.Bakery_charm_area then -- Selling Card
+    base_attach.children.use_button = G.UIDEF.card_focus_button{
+        card = card, parent = base_attach, type = 'use',
+        func = 'Bakery_can_unequip', button = 'Bakery_unequip_from_shop', card_width = card_width
+    }
+end"""
